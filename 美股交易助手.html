@@ -1,0 +1,1031 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>美股交易记录（绝对可靠版）</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: system-ui, -apple-system, sans-serif;
+        }
+        
+        body {
+            background: #f8f9fa;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            padding-bottom: 100px;
+        }
+        
+        h1 {
+            text-align: center;
+            color: #165DFF;
+            margin-bottom: 25px;
+            font-size: 24px;
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 25px;
+        }
+        
+        .stat {
+            background: white;
+            padding: 18px;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        }
+        
+        .stat-label {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 6px;
+        }
+        
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+        }
+        
+        .profit { color: #00B42A; }
+        .loss { color: #F53F3F; }
+        
+        .form {
+            background: white;
+            padding: 22px;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            margin-bottom: 25px;
+        }
+        
+        .form h2 {
+            font-size: 18px;
+            margin-bottom: 18px;
+            color: #333;
+        }
+        
+        .input-group {
+            margin-bottom: 15px;
+        }
+        
+        .input-group label {
+            display: block;
+            margin-bottom: 6px;
+            color: #555;
+            font-size: 14px;
+        }
+        
+        .input-group input, .input-group select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 16px;
+        }
+        
+        .row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+        
+        button {
+            width: 100%;
+            padding: 14px;
+            background: #165DFF;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        
+        button:hover {
+            background: #0e4bdb;
+        }
+        
+        .trades {
+            background: white;
+            padding: 22px;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            margin-bottom: 25px;
+        }
+        
+        .trades h2 {
+            font-size: 18px;
+            margin-bottom: 18px;
+            color: #333;
+        }
+        
+        .trade-item {
+            padding: 15px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .trade-item:last-child {
+            border-bottom: none;
+        }
+        
+        .trade-left {
+            flex: 1;
+        }
+        
+        .trade-symbol {
+            font-weight: bold;
+            font-size: 17px;
+            margin-bottom: 4px;
+        }
+        
+        .trade-info {
+            color: #666;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+        
+        .trade-right {
+            text-align: right;
+        }
+        
+        .trade-pnl {
+            font-weight: bold;
+            font-size: 17px;
+            margin-bottom: 6px;
+        }
+        
+        .delete-btn {
+            background: #F53F3F;
+            color: white;
+            border: none;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+            width: auto;
+        }
+        
+        .empty {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+        
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #333;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 6px;
+            z-index: 1000;
+            display: none;
+        }
+        
+        .tab {
+            display: flex;
+            margin-bottom: 15px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .tab button {
+            flex: 1;
+            background: none;
+            color: #666;
+            padding: 10px;
+            border: none;
+            border-bottom: 2px solid transparent;
+            font-size: 14px;
+        }
+        
+        .tab button.active {
+            color: #165DFF;
+            border-bottom-color: #165DFF;
+        }
+        
+        .charts {
+            background: white;
+            padding: 22px;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            margin-bottom: 25px;
+        }
+        
+        .charts h2 {
+            font-size: 18px;
+            margin-bottom: 18px;
+            color: #333;
+        }
+        
+        .chart-container {
+            margin-bottom: 30px;
+            height: 250px;
+        }
+        
+        .chart-container:last-child {
+            margin-bottom: 0;
+        }
+        
+        .nav-tabs {
+            display: flex;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            margin-bottom: 25px;
+            overflow: hidden;
+        }
+        
+        .nav-tabs button {
+            flex: 1;
+            background: none;
+            color: #666;
+            padding: 12px;
+            border: none;
+            border-bottom: 2px solid transparent;
+            font-size: 14px;
+            border-radius: 0;
+        }
+        
+        .nav-tabs button.active {
+            color: #165DFF;
+            border-bottom-color: #165DFF;
+            background: #f8f9fa;
+        }
+        
+        .page {
+            display: none;
+        }
+        
+        .page.active {
+            display: block;
+        }
+        
+        .buy-tag {
+            background: #00B42A;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 11px;
+            margin-right: 5px;
+        }
+        
+        .sell-tag {
+            background: #F53F3F;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 11px;
+            margin-right: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>📊 美股交易记录</h1>
+    
+    <!-- 统计数据 -->
+    <div class="stats">
+        <div class="stat">
+            <div class="stat-label">总盈亏</div>
+            <div class="stat-value profit" id="totalPnl">+$0.00</div>
+        </div>
+        <div class="stat">
+            <div class="stat-label">总投入</div>
+            <div class="stat-value" id="totalInvested">$0.00</div>
+        </div>
+        <div class="stat">
+            <div class="stat-label">已平仓交易</div>
+            <div class="stat-value" id="closedTrades">0</div>
+        </div>
+        <div class="stat">
+            <div class="stat-label">胜率</div>
+            <div class="stat-value" id="winRate">0%</div>
+        </div>
+    </div>
+    
+    <!-- 导航标签 -->
+    <div class="nav-tabs">
+        <button class="active" onclick="switchMainTab('add')">添加交易</button>
+        <button onclick="switchMainTab('positions')">当前持仓</button>
+        <button onclick="switchMainTab('closed')">已平仓</button>
+        <button onclick="switchMainTab('all')">全部记录</button>
+        <button onclick="switchMainTab('charts')">分析图表</button>
+    </div>
+    
+    <!-- 添加交易页面 -->
+    <div id="addPage" class="page active">
+        <div class="form">
+            <h2>➕ 添加交易记录</h2>
+            
+            <div class="tab">
+                <button class="active" onclick="switchTradeTab('buy')">买入</button>
+                <button onclick="switchTradeTab('sell')">卖出</button>
+            </div>
+            
+            <div class="input-group">
+                <label>股票代码</label>
+                <input type="text" id="symbol" placeholder="例如: AAPL, NVDA">
+            </div>
+            
+            <div class="row">
+                <div class="input-group">
+                    <label>数量(股)</label>
+                    <input type="number" id="quantity" placeholder="100">
+                </div>
+                <div class="input-group">
+                    <label>价格(美元)</label>
+                    <input type="number" step="0.01" id="price" placeholder="300.00">
+                </div>
+            </div>
+            
+            <div class="input-group">
+                <label>交易日期</label>
+                <input type="date" id="date">
+            </div>
+            
+            <button onclick="addTrade()">保存交易记录</button>
+        </div>
+    </div>
+    
+    <!-- 当前持仓页面 -->
+    <div id="positionsPage" class="page">
+        <div class="trades">
+            <h2>📈 当前持仓</h2>
+            <div id="positionsList"></div>
+            <div id="positionsEmpty" class="empty">暂无持仓</div>
+        </div>
+    </div>
+    
+    <!-- 已平仓交易页面 -->
+    <div id="closedPage" class="page">
+        <div class="trades">
+            <h2>✅ 已平仓交易</h2>
+            <div id="closedTradesList"></div>
+            <div id="closedEmpty" class="empty">暂无已平仓交易</div>
+        </div>
+    </div>
+    
+    <!-- 全部交易记录页面 -->
+    <div id="allPage" class="page">
+        <div class="trades">
+            <h2>📋 全部交易记录</h2>
+            <div id="allTradesList"></div>
+            <div id="allEmpty" class="empty">暂无交易记录</div>
+        </div>
+    </div>
+    
+    <!-- 分析图表页面 -->
+    <div id="chartsPage" class="page">
+        <div class="charts">
+            <h2>📈 交易分析</h2>
+            <div class="chart-container">
+                <canvas id="monthlyPnlChart"></canvas>
+            </div>
+            <div class="chart-container">
+                <canvas id="pnlDistributionChart"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <div class="toast" id="toast"></div>
+    
+    <script>
+        // 全局变量
+        let allTrades = []; // 所有原始交易记录（买入和卖出）
+        let positions = {}; // 当前持仓
+        let closedTrades = []; // 已平仓交易
+        let currentTradeTab = 'buy'; // 当前交易类型标签
+        let monthlyPnlChart = null;
+        let pnlDistributionChart = null;
+        
+        // 初始化
+        window.onload = function() {
+            // 设置默认日期为今天
+            document.getElementById('date').valueAsDate = new Date();
+            
+            // 加载数据
+            loadData();
+            
+            // 更新界面
+            updateStats();
+            renderAll();
+            
+            // 初始化图表
+            initCharts();
+            updateCharts();
+        };
+        
+        // 切换主标签页
+        function switchMainTab(tab) {
+            // 隐藏所有页面
+            document.querySelectorAll('.page').forEach(page => {
+                page.classList.remove('active');
+            });
+            
+            // 显示目标页面
+            document.getElementById(tab + 'Page').classList.add('active');
+            
+            // 更新导航样式
+            document.querySelectorAll('.nav-tabs button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+        }
+        
+        // 切换买入/卖出标签
+        function switchTradeTab(tab) {
+            currentTradeTab = tab;
+            document.querySelectorAll('.tab button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+        }
+        
+        // 加载本地数据
+        function loadData() {
+            try {
+                const data = localStorage.getItem('stock_trades_ultimate');
+                if (data) {
+                    const saved = JSON.parse(data);
+                    allTrades = saved.allTrades || [];
+                    positions = saved.positions || {};
+                    closedTrades = saved.closedTrades || [];
+                }
+            } catch (e) {
+                allTrades = [];
+                positions = {};
+                closedTrades = [];
+            }
+        }
+        
+        // 保存数据到本地
+        function saveData() {
+            try {
+                localStorage.setItem('stock_trades_ultimate', JSON.stringify({
+                    allTrades: allTrades,
+                    positions: positions,
+                    closedTrades: closedTrades
+                }));
+                return true;
+            } catch (e) {
+                showToast('数据保存失败');
+                return false;
+            }
+        }
+        
+        // 添加交易
+        function addTrade() {
+            // 获取输入值
+            const symbol = document.getElementById('symbol').value.trim().toUpperCase();
+            const quantity = parseInt(document.getElementById('quantity').value);
+            const price = parseFloat(document.getElementById('price').value);
+            const date = document.getElementById('date').value;
+            const type = currentTradeTab; // buy 或 sell
+            
+            // 验证输入
+            if (!symbol) {
+                showToast('请输入股票代码');
+                return;
+            }
+            if (!quantity || quantity <= 0) {
+                showToast('请输入有效的数量');
+                return;
+            }
+            if (!price || price <= 0) {
+                showToast('请输入有效的价格');
+                return;
+            }
+            if (!date) {
+                showToast('请选择交易日期');
+                return;
+            }
+            
+            // 创建原始交易记录
+            const trade = {
+                id: Date.now(),
+                symbol: symbol,
+                type: type,
+                quantity: quantity,
+                price: price,
+                total: quantity * price,
+                date: date
+            };
+            
+            // 添加到全部交易记录
+            allTrades.unshift(trade);
+            
+            // 处理买入
+            if (type === 'buy') {
+                // 添加到持仓
+                if (!positions[symbol]) {
+                    positions[symbol] = {
+                        symbol: symbol,
+                        quantity: 0,
+                        avgPrice: 0,
+                        totalCost: 0
+                    };
+                }
+                
+                // 更新持仓成本
+                const pos = positions[symbol];
+                const newTotalCost = pos.totalCost + trade.total;
+                const newQuantity = pos.quantity + quantity;
+                const newAvgPrice = newTotalCost / newQuantity;
+                
+                positions[symbol] = {
+                    symbol: symbol,
+                    quantity: newQuantity,
+                    avgPrice: newAvgPrice,
+                    totalCost: newTotalCost
+                };
+                
+                showToast(`买入 ${symbol} ${quantity}股 成功`);
+            }
+            // 处理卖出
+            else {
+                // 检查是否有足够持仓
+                if (!positions[symbol] || positions[symbol].quantity < quantity) {
+                    showToast('持仓不足，无法卖出');
+                    allTrades.shift(); // 移除刚才添加的卖出记录
+                    return;
+                }
+                
+                const pos = positions[symbol];
+                const sellQuantity = quantity;
+                const sellPrice = price;
+                const costBasis = pos.avgPrice * sellQuantity;
+                const proceeds = sellPrice * sellQuantity;
+                const pnl = proceeds - costBasis;
+                
+                // 创建已平仓交易记录
+                const closedTrade = {
+                    id: Date.now(),
+                    symbol: symbol,
+                    quantity: sellQuantity,
+                    buyPrice: pos.avgPrice.toFixed(2),
+                    sellPrice: sellPrice,
+                    pnl: pnl,
+                    pnlPercent: ((pnl / costBasis) * 100).toFixed(2),
+                    date: date
+                };
+                
+                closedTrades.unshift(closedTrade);
+                
+                // 更新持仓
+                const remainingQuantity = pos.quantity - sellQuantity;
+                if (remainingQuantity === 0) {
+                    delete positions[symbol];
+                } else {
+                    positions[symbol] = {
+                        symbol: symbol,
+                        quantity: remainingQuantity,
+                        avgPrice: pos.avgPrice,
+                        totalCost: pos.avgPrice * remainingQuantity
+                    };
+                }
+                
+                showToast(`卖出 ${symbol} ${quantity}股 成功，盈亏: ${pnl >= 0 ? '+' : ''}$${pnl.toFixed(2)}`);
+            }
+            
+            // 保存数据
+            if (saveData()) {
+                // 清空表单
+                document.getElementById('symbol').value = '';
+                document.getElementById('quantity').value = '';
+                document.getElementById('price').value = '';
+                document.getElementById('date').valueAsDate = new Date();
+                
+                // 更新界面
+                updateStats();
+                renderAll();
+                updateCharts();
+            }
+        }
+        
+        // 删除持仓
+        function deletePosition(symbol) {
+            if (confirm(`确定要删除 ${symbol} 的全部持仓记录吗？\n\n注意：这只会删除持仓显示，不会删除原始交易记录。\n如果要删除原始交易记录，请去"全部记录"页面。`)) {
+                delete positions[symbol];
+                saveData();
+                updateStats();
+                renderAll();
+                updateCharts();
+                showToast('持仓记录已删除');
+            }
+        }
+        
+        // 删除已平仓交易
+        function deleteClosedTrade(id) {
+            if (confirm('确定要删除这条已平仓交易记录吗？')) {
+                closedTrades = closedTrades.filter(t => t.id !== id);
+                saveData();
+                updateStats();
+                renderAll();
+                updateCharts();
+                showToast('已平仓交易记录已删除');
+            }
+        }
+        
+        // 删除原始交易记录
+        function deleteAllTrade(id) {
+            if (confirm('确定要删除这条原始交易记录吗？\n\n警告：这会影响持仓和盈亏计算！\n建议只删除错误添加的记录。')) {
+                // 找到要删除的交易
+                const tradeToDelete = allTrades.find(t => t.id === id);
+                if (!tradeToDelete) return;
+                
+                // 从全部交易记录中删除
+                allTrades = allTrades.filter(t => t.id !== id);
+                
+                // 重新计算所有持仓和已平仓交易
+                recalculateAllData();
+                
+                // 保存并更新界面
+                saveData();
+                updateStats();
+                renderAll();
+                updateCharts();
+                showToast('原始交易记录已删除');
+            }
+        }
+        
+        // 重新计算所有数据（删除原始交易后调用）
+        function recalculateAllData() {
+            // 重置持仓和已平仓交易
+            positions = {};
+            closedTrades = [];
+            
+            // 按时间顺序重新处理所有交易
+            const sortedTrades = [...allTrades].sort((a, b) => new Date(a.date) - new Date(b.date));
+            
+            sortedTrades.forEach(trade => {
+                if (trade.type === 'buy') {
+                    // 处理买入
+                    if (!positions[trade.symbol]) {
+                        positions[trade.symbol] = {
+                            symbol: trade.symbol,
+                            quantity: 0,
+                            avgPrice: 0,
+                            totalCost: 0
+                        };
+                    }
+                    
+                    const pos = positions[trade.symbol];
+                    const newTotalCost = pos.totalCost + trade.total;
+                    const newQuantity = pos.quantity + trade.quantity;
+                    const newAvgPrice = newTotalCost / newQuantity;
+                    
+                    positions[trade.symbol] = {
+                        symbol: trade.symbol,
+                        quantity: newQuantity,
+                        avgPrice: newAvgPrice,
+                        totalCost: newTotalCost
+                    };
+                } else {
+                    // 处理卖出
+                    if (!positions[trade.symbol] || positions[trade.symbol].quantity < trade.quantity) {
+                        // 持仓不足，跳过这条卖出记录
+                        return;
+                    }
+                    
+                    const pos = positions[trade.symbol];
+                    const sellQuantity = trade.quantity;
+                    const sellPrice = trade.price;
+                    const costBasis = pos.avgPrice * sellQuantity;
+                    const proceeds = sellPrice * sellQuantity;
+                    const pnl = proceeds - costBasis;
+                    
+                    // 创建已平仓交易记录
+                    const closedTrade = {
+                        id: Date.now() + Math.random(), // 生成新ID
+                        symbol: trade.symbol,
+                        quantity: sellQuantity,
+                        buyPrice: pos.avgPrice.toFixed(2),
+                        sellPrice: sellPrice,
+                        pnl: pnl,
+                        pnlPercent: ((pnl / costBasis) * 100).toFixed(2),
+                        date: trade.date
+                    };
+                    
+                    closedTrades.unshift(closedTrade);
+                    
+                    // 更新持仓
+                    const remainingQuantity = pos.quantity - sellQuantity;
+                    if (remainingQuantity === 0) {
+                        delete positions[trade.symbol];
+                    } else {
+                        positions[trade.symbol] = {
+                            symbol: trade.symbol,
+                            quantity: remainingQuantity,
+                            avgPrice: pos.avgPrice,
+                            totalCost: pos.avgPrice * remainingQuantity
+                        };
+                    }
+                }
+            });
+        }
+        
+        // 更新统计数据
+        function updateStats() {
+            // 计算统计值
+            const totalPnl = closedTrades.reduce((sum, t) => sum + t.pnl, 0);
+            const totalInvested = Object.values(positions).reduce((sum, p) => sum + p.totalCost, 0);
+            const totalClosed = closedTrades.length;
+            const winningTrades = closedTrades.filter(t => t.pnl > 0).length;
+            const winRate = totalClosed > 0 ? (winningTrades / totalClosed * 100).toFixed(1) : 0;
+            
+            // 更新显示
+            document.getElementById('totalPnl').textContent = totalPnl >= 0 
+                ? `+$${totalPnl.toFixed(2)}` 
+                : `-$${Math.abs(totalPnl).toFixed(2)}`;
+            document.getElementById('totalPnl').className = `stat-value ${totalPnl >= 0 ? 'profit' : 'loss'}`;
+            
+            document.getElementById('totalInvested').textContent = `$${totalInvested.toFixed(2)}`;
+            document.getElementById('closedTrades').textContent = totalClosed;
+            document.getElementById('winRate').textContent = `${winRate}%`;
+        }
+        
+        // 渲染所有列表
+        function renderAll() {
+            renderPositions();
+            renderClosedTrades();
+            renderAllTrades();
+        }
+        
+        // 渲染持仓列表（关键修复：直接绑定事件）
+        function renderPositions() {
+            const list = document.getElementById('positionsList');
+            const empty = document.getElementById('positionsEmpty');
+            
+            // 清空列表
+            list.innerHTML = '';
+            
+            const positionsArray = Object.values(positions);
+            if (positionsArray.length === 0) {
+                empty.style.display = 'block';
+                return;
+            }
+            
+            empty.style.display = 'none';
+            
+            // 渲染每条持仓
+            positionsArray.forEach(pos => {
+                const item = document.createElement('div');
+                item.className = 'trade-item';
+                
+                // 创建左侧内容
+                const leftDiv = document.createElement('div');
+                leftDiv.className = 'trade-left';
+                leftDiv.innerHTML = `
+                    <div class="trade-symbol">${pos.symbol}</div>
+                    <div class="trade-info">持仓: ${pos.quantity}股</div>
+                    <div class="trade-info">平均成本: $${pos.avgPrice.toFixed(2)}</div>
+                    <div class="trade-info">总成本: $${pos.totalCost.toFixed(2)}</div>
+                `;
+                
+                // 创建右侧内容
+                const rightDiv = document.createElement('div');
+                rightDiv.className = 'trade-right';
+                
+                // 创建删除按钮并直接绑定事件
+                const deleteBtn = document.createElement('button');
+                deleteBtn.className = 'delete-btn';
+                deleteBtn.textContent = '删除';
+                deleteBtn.onclick = function() {
+                    deletePosition(pos.symbol);
+                };
+                
+                rightDiv.appendChild(deleteBtn);
+                
+                // 组装
+                item.appendChild(leftDiv);
+                item.appendChild(rightDiv);
+                list.appendChild(item);
+            });
+        }
+        
+        // 渲染已平仓交易列表（关键修复：直接绑定事件）
+        function renderClosedTrades() {
+            const list = document.getElementById('closedTradesList');
+            const empty = document.getElementById('closedEmpty');
+            
+            // 清空列表
+            list.innerHTML = '';
+            
+            if (closedTrades.length === 0) {
+                empty.style.display = 'block';
+                return;
+            }
+            
+            empty.style.display = 'none';
+            
+            // 渲染每条交易
+            closedTrades.forEach(trade => {
+                const pnlClass = trade.pnl >= 0 ? 'profit' : 'loss';
+                const pnlSign = trade.pnl >= 0 ? '+' : '';
+                
+                const item = document.createElement('div');
+                item.className = 'trade-item';
+                
+                // 创建左侧内容
+                const leftDiv = document.createElement('div');
+                leftDiv.className = 'trade-left';
+                leftDiv.innerHTML = `
+                    <div class="trade-symbol">${trade.symbol}</div>
+                    <div class="trade-info">${trade.quantity}股 · 买$${trade.buyPrice} → 卖$${trade.sellPrice}</div>
+                    <div class="trade-info">收益率: ${pnlSign}${trade.pnlPercent}% · ${trade.date}</div>
+                `;
+                
+                // 创建右侧内容
+                const rightDiv = document.createElement('div');
+                rightDiv.className = 'trade-right';
+                
+                // 创建盈亏显示
+                const pnlDiv = document.createElement('div');
+                pnlDiv.className = `trade-pnl ${pnlClass}`;
+                pnlDiv.textContent = `${pnlSign}$${trade.pnl.toFixed(2)}`;
+                
+                // 创建删除按钮并直接绑定事件
+                const deleteBtn = document.createElement('button');
+                deleteBtn.className = 'delete-btn';
+                deleteBtn.textContent = '删除';
+                deleteBtn.onclick = function() {
+                    deleteClosedTrade(trade.id);
+                };
+                
+                rightDiv.appendChild(pnlDiv);
+                rightDiv.appendChild(deleteBtn);
+                
+                // 组装
+                item.appendChild(leftDiv);
+                item.appendChild(rightDiv);
+                list.appendChild(item);
+            });
+        }
+        
+        // 渲染全部交易记录列表（关键修复：直接绑定事件）
+        function renderAllTrades() {
+            const list = document.getElementById('allTradesList');
+            const empty = document.getElementById('allEmpty');
+            
+            // 清空列表
+            list.innerHTML = '';
+            
+            if (allTrades.length === 0) {
+                empty.style.display = 'block';
+                return;
+            }
+            
+            empty.style.display = 'none';
+            
+            // 渲染每条原始交易
+            allTrades.forEach(trade => {
+                const typeTag = trade.type === 'buy' 
+                    ? '<span class="buy-tag">买入</span>' 
+                    : '<span class="sell-tag">卖出</span>';
+                
+                const item = document.createElement('div');
+                item.className = 'trade-item';
+                
+                // 创建左侧内容
+                const leftDiv = document.createElement('div');
+                leftDiv.className = 'trade-left';
+                leftDiv.innerHTML = `
+                    <div class="trade-symbol">${typeTag}${trade.symbol}</div>
+                    <div class="trade-info">${trade.quantity}股 · $${trade.price.toFixed(2)}</div>
+                    <div class="trade-info">总金额: $${trade.total.toFixed(2)} · ${trade.date}</div>
+                `;
+                
+                // 创建右侧内容
+                const rightDiv = document.createElement('div');
+                rightDiv.className = 'trade-right';
+                
+                // 创建删除按钮并直接绑定事件
+                const deleteBtn = document.createElement('button');
+                deleteBtn.className = 'delete-btn';
+                deleteBtn.textContent = '删除';
+                deleteBtn.onclick = function() {
+                    deleteAllTrade(trade.id);
+                };
+                
+                rightDiv.appendChild(deleteBtn);
+                
+                // 组装
+                item.appendChild(leftDiv);
+                item.appendChild(rightDiv);
+                list.appendChild(item);
+            });
+        }
+        
+        // 初始化图表
+        function initCharts() {
+            // 月度盈亏柱状图
+            const monthlyCtx = document.getElementById('monthlyPnlChart').getContext('2d');
+            monthlyPnlChart = new Chart(monthlyCtx, {
+                type: 'bar',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: '月度盈亏(美元)',
+                        data: [],
+                        backgroundColor: function(context) {
+                            return context.raw >= 0 ? '#00B42A' : '#F53F3F';
+                        },
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+            
+            // 盈亏分布饼图
+            const distributionCtx = document.getElementById('pnlDistributionChart').getContext('2d');
+            pnlDistributionChart = new Chart(distributionCtx, {
+                type: 'pie',
+                data: {
+                    labels: ['盈利交易', '亏损交易', '持平交易'],
+                    datasets: [{
+                        data: [0, 0, 0],
+                        backgroundColor: ['#00B42A', '#F53F3F', '#FF7D00'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+        }
+        
+        // 更新图表数据
+        function updateCharts() {
+            if (!monthlyPnlChart || !pnlDistributionChart) return;
+            
+            // 计算月度盈亏
+            const monthlyData = {};
+            closedTrades.forEach(trade => {
+                const month = trade.date.substring(0, 7); // YYYY-MM
+                if (!monthlyData[month]) {
+                    monthlyData[month] = 0;
+                }
+                monthlyData[month] += trade.pnl;
+            });
+            
+            // 转换为数组并排序
+            const months = Object.keys(monthlyData).sort();
+            const monthlyPnls = months.map(month => monthlyData[month]);
+            
+            // 更新月度盈亏图表
+            monthlyPnlChart.data.labels = months;
+            monthlyPnlChart.data.datasets[0].data = monthlyPnls;
+            monthlyPnlChart.update();
+            
+            // 计算盈亏分布
+            const winning = closedTrades.filter(t => t.pnl > 0).length;
+            const losing = closedTrades.filter(t => t.pnl < 0).length;
+            const even = closedTrades.filter(t => t.pnl === 0).length;
+            
+            // 更新盈亏分布图表
+            pnlDistributionChart.data.datasets[0].data = [winning, losing, even];
+            pnlDistributionChart.update();
+        }
+        
+        // 显示提示消息
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.style.display = 'block';
+            
+            setTimeout(() => {
+                toast.style.display = 'none';
+            }, 2500);
+        }
+    </script>
+</body>
+</html>
